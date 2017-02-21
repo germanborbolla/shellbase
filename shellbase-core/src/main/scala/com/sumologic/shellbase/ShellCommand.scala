@@ -18,6 +18,8 @@
  */
 package com.sumologic.shellbase
 
+import java.io.PrintWriter
+
 import com.sumologic.shellbase.cmdline.ArgumentTrackingOptions
 import jline.console.completer.{Completer, NullCompleter, StringsCompleter}
 import org.apache.commons.cli.{CommandLine, GnuParser, HelpFormatter, Options, ParseException, UnrecognizedOptionException}
@@ -154,7 +156,8 @@ abstract class ShellCommand(val name: String,
 
     val txt = s"$name ${arguments.mkString(" ")}"
 
-    new HelpFormatter().printHelp(txt, options)
+    new HelpFormatter().printHelp(new PrintWriter(Console.out, true), HelpFormatter.DEFAULT_WIDTH, txt, null,
+      options, HelpFormatter.DEFAULT_LEFT_PAD, HelpFormatter.DEFAULT_DESC_PAD, null, false)
   }
 
   final def completer = {
