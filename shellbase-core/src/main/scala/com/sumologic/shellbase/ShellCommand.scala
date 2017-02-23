@@ -37,12 +37,16 @@ abstract class ShellCommand(val name: String,
                             val deprecated: Boolean = false) {
 
   protected val _logger = LoggerFactory.getLogger(getClass)
-  protected lazy val prompter = new ShellPrompter()
+  protected var shellIO: ShellIO = _
+  protected lazy val prompter = new ShellPrompter(shellIO)
 
   private val _currentCommand = new ThreadLocal[String]()
 
   protected def currentCommand: String = _currentCommand.get()
 
+  def configureIO(shellIO: ShellIO): Unit = {
+    this.shellIO = shellIO
+  }
   def executeLine(arguments: List[String], commandPath: List[String] = List()): Boolean = {
     _currentCommand.set {
       val cmd = commandPath.mkString(" ").trim

@@ -29,13 +29,7 @@ import jline.console.{ConsoleReader, UserInterruptException}
 /**
   * Collection of ways to solicit validated input from a user on a command line.
   */
-class ShellPrompter(in: ConsoleReader = new ConsoleReader) {
-
-  // NOTE(carlton, 2014-01-08): There's probably more stuff we'd like to turn off here;
-  // I wish ConsoleReader had a way to say "read a line, disabling all non-interrupt
-  // characters" but I don't see it.  At any rate, with this it's safe to have a
-  // password with a ! in it.
-  in.setExpandEvents(false)
+class ShellPrompter(shellIO: ShellIO = new ConsoleShellIO()) {
 
   private[shellbase] val asciiCR = 13.toChar
 
@@ -47,18 +41,18 @@ class ShellPrompter(in: ConsoleReader = new ConsoleReader) {
     */
   def confirm(question: String): Boolean = {
 
-    printf("%s [Y/N]: ", question)
-    val response = in.readCharacter("ynYN".toArray: _*)
-    println(response.toChar)
+    shellIO.printf("%s [Y/N]: ", question)
+    val response = shellIO.readCharacter("ynYN".toArray)
+    shellIO.println(response.toChar)
 
     response == 'y' || response == 'Y'
   }
 
   def confirmWithDefault(question: String, default: Boolean) = {
     val yesNo = if (default) "[Y/n]" else "[y/N]"
-    print(s"$question $yesNo: ")
-    val input = in.readCharacter(s"ynYN$asciiCR".toArray: _*)
-    println(input.toChar)
+    shellIO.print(s"$question $yesNo: ")
+    val input = shellIO.readCharacter(s"ynYN$asciiCR".toArray)
+    shellIO.println(input.toChar)
 
     if (input == asciiCR) {
       default
@@ -68,25 +62,25 @@ class ShellPrompter(in: ConsoleReader = new ConsoleReader) {
   }
 
   def readChar(question: String, charsAllowed: Seq[Char]): Int = {
-    printf(s"$question : ")
+    shellIO.printf(s"$question : ")
     if (charsAllowed.isEmpty) {
-      in.readCharacter()
+      shellIO.readCharacter()
     } else {
-      in.readCharacter(charsAllowed: _*)
+      shellIO.readCharacter(charsAllowed)
     }
   }
 
   def confirmWithWarning(question: String): Boolean = {
-    println(ShellBanner.Warning)
+    shellIO.println(ShellBanner.Warning)
     confirm(question)
   }
 
   def askForTime(question: String, dateFormat: String = "d MMM HH:mm"): Date = {
-    printf(question)
+    shellIO.printf(question)
     val formatter = new SimpleDateFormat(dateFormat)
     val calendar = new GregorianCalendar()
     val prompt = s"Please enter date in following format - $dateFormat. Example - ${formatter.format(calendar.getTime)}. : "
-    val userDate = in.readLine(prompt)
+    val userDate = shellIO.readLine(prompt)
     val out = formatter.parse(userDate)
     // FIXME(carlton, 2015-08-10): If this were the last warning in util, then I'd figure
     // out what magic to put in here to get the right result, but for now I'm not
@@ -115,7 +109,7 @@ class ShellPrompter(in: ConsoleReader = new ConsoleReader) {
         return password
       }
 
-      println(s"$firstPrompt does not match.")
+      shellIO.println(s"$firstPrompt does not match.")
       attempts += 1
     }
 
@@ -136,7 +130,7 @@ class ShellPrompter(in: ConsoleReader = new ConsoleReader) {
     var attempts = 0
     var result: String = null
     while (result == null && attempts < maxAttempts) {
-      result = in.readLine(prompt, maskCharacter).trim
+      result = shellIO.readLine(prompt, maskCharacter).trim
 
       if ((result == null || result.trim.length < 1) && default != null) {
         result = default
@@ -146,7 +140,7 @@ class ShellPrompter(in: ConsoleReader = new ConsoleReader) {
       for (validator <- validators) {
         val validationResult = validator(result)
         if (!validationResult.valid) {
-          println(validationResult.message)
+          shellIO.println(validationResult.message)
           valid = false
         }
       }
@@ -165,12 +159,12 @@ class ShellPrompter(in: ConsoleReader = new ConsoleReader) {
   private def printOptions(options: Seq[String], allowNoSelection: Boolean) {
     var i = 1
     options.foreach(option => {
-      printf("%3d) %s%n", i, option)
+      shellIO.printf("%3d) %s%n", i, option)
       i += 1
     })
 
     if (allowNoSelection) {
-      printf("  0) None%n")
+      shellIO.printf("  0) None%n")
     }
   }
 
@@ -181,9 +175,9 @@ class ShellPrompter(in: ConsoleReader = new ConsoleReader) {
                       maxAttempts: Int = 3): String = {
     var defaultNumber: String = null
     if (default == null) {
-      println(headline)
+      shellIO.println(headline)
     } else {
-      println("%s[%s]".format(headline, default))
+      shellIO.println("%s[%s]".format(headline, default))
       val index = options.indexOf(default)
       if (index > 0) {
         defaultNumber = (index + 1).toString
@@ -223,7 +217,7 @@ class ShellPrompter(in: ConsoleReader = new ConsoleReader) {
                                      return_options: Seq[String],
                                      maxAttempts: Int = 3,
                                      allowNoSelection: Boolean = false): Seq[String] = {
-    println(headline)
+    shellIO.println(headline)
 
     val from = allowNoSelection match {
       case true => 0

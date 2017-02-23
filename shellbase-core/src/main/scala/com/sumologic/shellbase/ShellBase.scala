@@ -202,6 +202,7 @@ abstract class ShellBase(val name: String) {
   final def initializeCommands() {
     val customCommands = commands
     rootSet.commands ++= customCommands
+    rootSet.configureIO(new ConsoleShellIO())
     validateCommands()
   }
 

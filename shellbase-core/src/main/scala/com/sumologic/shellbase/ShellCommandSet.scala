@@ -50,6 +50,10 @@ class ShellCommandSet(name: String, helpText: String, aliases: List[String] = Li
     postExecuteHooks.foreach(_(shellCommand, arguments))
   }
 
+  override def configureIO(shellIO: ShellIO): Unit = {
+    commands.foreach(_.configureIO(shellIO))
+  }
+
   final override def executeLine(args: List[String], commandPath: List[String] = List()): Boolean = {
 
     if (args.length < 1) {
